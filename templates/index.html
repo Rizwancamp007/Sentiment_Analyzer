@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sentiment Analyzer | AI-Powered Text Analysis</title>
+  <meta name="description" content="Analyze the sentiment of any text instantly using machine learning. Detect positive, negative, or neutral tone."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0f1e;
+      --surface:   #111827;
+      --card:      #1a2235;
+      --border:    #1f2d45;
+      --pos:       #10b981;
+      --neg:       #ef4444;
+      --neu:       #6366f1;
+      --txt:       #e2e8f0;
+      --muted:     #64748b;
+      --accent:    #818cf8;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Hero header ── */
+    header {
+      width: 100%;
+      padding: 28px 24px 0;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(129,140,248,.15);
+      color: var(--accent);
+      border: 1px solid rgba(129,140,248,.3);
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: .95rem;
+      max-width: 480px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+
+    /* ── Main card ── */
+    main {
+      width: 100%;
+      max-width: 760px;
+      padding: 0 20px 60px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(129,140,248,.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 130px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--txt);
+      font-family: 'Inter', sans-serif;
+      font-size: .95rem;
+      line-height: 1.6;
+      padding: 14px 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color .25s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(129,140,248,.15);
+    }
+
+    textarea::placeholder { color: var(--muted); }
+
+    /* ── Quick examples ── */
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 20px;
+    }
+
+    .ex-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: .78rem;
+      padding: 5px 13px;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .ex-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Analyze button ── */
+    #analyzeBtn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #818cf8, #c084fc);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .03em;
+      transition: opacity .2s, transform .15s;
+    }
+
+    #analyzeBtn:hover { opacity: .9; transform: translateY(-1px); }
+    #analyzeBtn:active { transform: translateY(0); }
+    #analyzeBtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Result section ── */
+    #result {
+      margin-top: 24px;
+      display: none;
+      animation: fadeUp .4s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .sentiment-emoji { font-size: 2.4rem; line-height: 1; }
+
+    .sentiment-label {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+    }
+
+    .sentiment-sub {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Confidence bars ── */
+    .bars-title {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 12px;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .bar-row span:first-child {
+      width: 70px;
+      font-size: .83rem;
+      font-weight: 500;
+      text-transform: capitalize;
+      color: var(--txt);
+      flex-shrink: 0;
+    }
+
+    .bar-track {
+      flex: 1;
+      background: var(--surface);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .7s cubic-bezier(.4,0,.2,1);
+    }
+
+    .bar-fill.positive { background: linear-gradient(90deg, #10b981, #34d399); }
+    .bar-fill.negative { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .bar-fill.neutral  { background: linear-gradient(90deg, #6366f1, #818cf8); }
+
+    .bar-pct {
+      width: 44px;
+      text-align: right;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Cleaned text box ── */
+    .cleaned-box {
+      margin-top: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .cleaned-box h4 {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 6px;
+    }
+
+    .cleaned-box p {
+      font-size: .88rem;
+      color: var(--muted);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    /* ── Error ── */
+    #errorMsg {
+      display: none;
+      margin-top: 14px;
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.3);
+      border-radius: 10px;
+      padding: 11px 16px;
+      color: #fca5a5;
+      font-size: .88rem;
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 20px 0 10px;
+    }
+
+    .stat { text-align: center; }
+    .stat-num {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-lbl {
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-top: 2px;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 20px;
+      color: var(--muted);
+      font-size: .78rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">🤖 ML-Powered</div>
+  <h1>Sentiment Analyzer</h1>
+  <p>Paste any tweet, review, or sentence and instantly detect whether it's positive, negative, or neutral.</p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">27K+</div>
+      <div class="stat-lbl">Tweets Trained</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-lbl">Sentiment Classes</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">TF-IDF</div>
+      <div class="stat-lbl">Feature Method</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <label for="textInput">Enter your text</label>
+    <textarea id="textInput" placeholder="e.g. This product is absolutely amazing! I love it so much..."></textarea>
+
+    <div class="examples">
+      <span class="ex-chip" onclick="setExample(this)">😍 I love this product!</span>
+      <span class="ex-chip" onclick="setExample(this)">😡 Worst experience ever.</span>
+      <span class="ex-chip" onclick="setExample(this)">📦 Ships within 2–3 days.</span>
+      <span class="ex-chip" onclick="setExample(this)">✈️ Flight delayed by 3 hours again.</span>
+      <span class="ex-chip" onclick="setExample(this)">🎉 Got promoted today!</span>
+    </div>
+
+    <button id="analyzeBtn" onclick="analyze()">Analyze Sentiment</button>
+
+    <div id="errorMsg"></div>
+
+    <div id="result">
+      <div class="result-header">
+        <div class="sentiment-emoji" id="resEmoji"></div>
+        <div>
+          <div class="sentiment-label" id="resLabel"></div>
+          <div class="sentiment-sub" id="resSub"></div>
+        </div>
+      </div>
+
+      <div class="bars-title">Confidence Scores</div>
+      <div id="barsContainer"></div>
+
+      <div class="cleaned-box">
+        <h4>Processed Text</h4>
+        <p id="cleanedText"></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>Built with Flask &amp; scikit-learn · Trained on Twitter Sentiment Dataset</footer>
+
+<script>
+  const SENTIMENT_META = {
+    positive: { emoji: '😊', color: 'var(--pos)', label: 'Positive', sub: 'This text has a positive tone.' },
+    negative: { emoji: '😠', color: 'var(--neg)', label: 'Negative', sub: 'This text has a negative tone.' },
+    neutral:  { emoji: '😐', color: 'var(--neu)', label: 'Neutral',  sub: 'This text appears neutral or factual.' }
+  };
+
+  function setExample(el) {
+    // Strip leading emoji + space
+    document.getElementById('textInput').value = el.textContent.replace(/^.\s/, '');
+  }
+
+  async function analyze() {
+    const text = document.getElementById('textInput').value.trim();
+    const btn  = document.getElementById('analyzeBtn');
+    const err  = document.getElementById('errorMsg');
+    const res  = document.getElementById('result');
+
+    err.style.display = 'none';
+    res.style.display = 'none';
+
+    if (!text) {
+      err.textContent = '⚠️ Please enter some text before analyzing.';
+      err.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analyzing...';
+
+    try {
+      const response = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Server error');
+
+      renderResult(data);
+    } catch (e) {
+      err.textContent = '⚠️ ' + e.message;
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Analyze Sentiment';
+    }
+  }
+
+  function renderResult(data) {
+    const { sentiment, scores, cleaned } = data;
+    const meta = SENTIMENT_META[sentiment] || SENTIMENT_META.neutral;
+
+    document.getElementById('resEmoji').textContent = meta.emoji;
+    const lbl = document.getElementById('resLabel');
+    lbl.textContent = meta.label;
+    lbl.style.color = meta.color;
+    document.getElementById('resSub').textContent = meta.sub;
+    document.getElementById('cleanedText').textContent = cleaned || '(empty after cleaning)';
+
+    // Build bars
+    const container = document.getElementById('barsContainer');
+    container.innerHTML = '';
+    const order = ['positive', 'negative', 'neutral'];
+    order.forEach(key => {
+      const pct = scores[key] ?? 0;
+      container.innerHTML += `
+        <div class="bar-row">
+          <span>${key}</span>
+          <div class="bar-track">
+            <div class="bar-fill ${key}" id="fill-${key}" style="width:0%"></div>
+          </div>
+          <span class="bar-pct">${pct}%</span>
+        </div>`;
+    });
+
+    // Animate bars after paint
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        order.forEach(key => {
+          const el = document.getElementById('fill-' + key);
+          if (el) el.style.width = (scores[key] ?? 0) + '%';
+        });
+      });
+    });
+
+    document.getElementById('result').style.display = 'block';
+  }
+
+  // Allow Ctrl+Enter to submit
+  document.getElementById('textInput').addEventListener('keydown', e => {
+    if (e.ctrlKey && e.key === 'Enter') analyze();
+  });
+</script>
+</body>
+</html>
